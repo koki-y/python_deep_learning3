@@ -1,6 +1,7 @@
 import weakref
 import numpy as np
 import contextlib
+import math
 
 class Config:
     enable_backprop = True
@@ -211,6 +212,17 @@ def rdiv(x0, x1):
 
 def pow(x, c):
     return Pow(c)(x)
+
+def my_sin(x, threshold=0.0001):
+    y = 0
+    for i in range(100000):
+        c = (-1) ** i / math.factorial(2 * i + 1)
+        t = c * x ** (2 * i + 1)
+        y = y + t
+        if abs(t.data) < threshold:
+            break
+
+    return y
 
 def setup_variable():
     Variable.__mul__ = mul
