@@ -2,7 +2,7 @@ import weakref
 import numpy as np
 import contextlib
 
-from dezero.core_simple import Variable, Function, Pow
+from dezero.core import Variable, Function, Pow
 
 class Exp(Function):
     def forward(self, x):

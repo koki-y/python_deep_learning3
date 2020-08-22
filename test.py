@@ -2,7 +2,7 @@ import unittest
 
 from variable import *
 
-from dezero.core_simple import *
+from dezero.core import *
 
 class AddTest(unittest.TestCase):
     def test_forward(self):
@@ -16,8 +16,8 @@ class AddTest(unittest.TestCase):
         y.backward(retain_grad=True)
 
         self.assertEqual(y.data, np.array(6))
-        self.assertEqual(y.grad, np.array(1))
-        self.assertEqual(x.grad, np.array(2))
+        self.assertEqual(y.grad.data, np.array(1))
+        self.assertEqual(x.grad.data, np.array(2))
 
 class MulTest(unittest.TestCase):
     def test_forward(self):
@@ -29,9 +29,9 @@ class MulTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(7.0))
-        self.assertEqual(a.grad, 2.0)
-        self.assertEqual(b.grad, 3.0)
-        self.assertEqual(c.grad, 1.0)
+        self.assertEqual(a.grad.data, np.array(2.0))
+        self.assertEqual(b.grad.data, np.array(3.0))
+        self.assertEqual(c.grad.data, np.array(1.0))
 
 class NegTest(unittest.TestCase):
     def test_forward(self):
@@ -40,7 +40,7 @@ class NegTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(-2.0))
-        self.assertEqual(x.grad, -1.0)
+        self.assertEqual(x.grad.data, np.array(-1.0))
 
 class SubTest(unittest.TestCase):
     def test_forward(self):
@@ -50,8 +50,8 @@ class SubTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(-1.0))
-        self.assertEqual(a.grad, 1.0)
-        self.assertEqual(b.grad, -1.0)
+        self.assertEqual(a.grad.data, np.array(1.0))
+        self.assertEqual(b.grad.data, np.array(-1.0))
 
 class DivTest(unittest.TestCase):
     def test_forward(self):
@@ -61,8 +61,8 @@ class DivTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(2.0))
-        self.assertEqual(a.grad, 0.5)
-        self.assertEqual(b.grad, -1.0)
+        self.assertEqual(a.grad.data, np.array(0.5))
+        self.assertEqual(b.grad.data, np.array(-1.0))
 
 class PowTest(unittest.TestCase):
     def test_forward(self):
@@ -71,7 +71,7 @@ class PowTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(16.0))
-        self.assertEqual(x.grad, 32.0)
+        self.assertEqual(x.grad.data, np.array(32.0))
 
 class SquareTest(unittest.TestCase):
     def test_forward(self):
@@ -85,14 +85,14 @@ class SquareTest(unittest.TestCase):
         y = square(x)
         y.backward()
         expected = np.array(6.0)
-        self.assertEqual(x.grad, expected)
+        self.assertEqual(x.grad.data, expected)
 
     def test_gradient_check(self):
         x = Variable(np.random.rand(1))
         y = square(x)
         y.backward()
         num_grad = numerical_diff(square, x)
-        flg = np.allclose(x.grad, num_grad)
+        flg = np.allclose(x.grad.data, num_grad.data)
         self.assertTrue(flg)
 
     def test_huge_calc(self):
@@ -109,8 +109,8 @@ class CombinationTest(unittest.TestCase):
         z.backward(retain_grad=True)
 
         self.assertEqual(z.data, np.array(13))
-        self.assertEqual(x.grad, np.array(4))
-        self.assertEqual(y.grad, np.array(6))
+        self.assertEqual(x.grad.data, np.array(4))
+        self.assertEqual(y.grad.data, np.array(6))
     
     def test_complex_calc_model(self):
         x = Variable(np.array(2))
@@ -122,11 +122,11 @@ class CombinationTest(unittest.TestCase):
         y.backward(retain_grad=True)
 
         self.assertEqual(y.data, np.array(32))
-        self.assertEqual(y.grad, np.array(1))
-        self.assertEqual(c.grad, np.array(1))
-        self.assertEqual(b.grad, np.array(1))
-        self.assertEqual(a.grad, np.array(16))
-        self.assertEqual(x.grad, np.array(64))
+        self.assertEqual(y.grad.data, np.array(1))
+        self.assertEqual(c.grad.data, np.array(1))
+        self.assertEqual(b.grad.data, np.array(1))
+        self.assertEqual(a.grad.data, np.array(16))
+        self.assertEqual(x.grad.data, np.array(64))
 
     def test_retain_grad(self):
         x0 = Variable(np.array(1.0))
@@ -137,8 +137,8 @@ class CombinationTest(unittest.TestCase):
 
         self.assertEqual(y.grad, None)
         self.assertEqual(t.grad, None)
-        self.assertEqual(x0.grad, np.array(2.0))
-        self.assertEqual(x1.grad, np.array(1.0))
+        self.assertEqual(x0.grad.data, np.array(2.0))
+        self.assertEqual(x1.grad.data, np.array(1.0))
 
     def test_no_grad(self):
         with no_grad():
@@ -159,9 +159,9 @@ class OperatorTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(7.0))
-        self.assertEqual(a.grad, 2.0)
-        self.assertEqual(b.grad, 3.0)
-        self.assertEqual(c.grad, 1.0)
+        self.assertEqual(a.grad.data, np.array(2.0))
+        self.assertEqual(b.grad.data, np.array(3.0))
+        self.assertEqual(c.grad.data, np.array(1.0))
 
     def test_with_np_array(self):
         x = Variable(np.array(2.0))
@@ -181,7 +181,7 @@ class OperatorTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(-2.0))
-        self.assertEqual(x.grad, -1.0)
+        self.assertEqual(x.grad.data, np.array(-1.0))
 
     def test_sub(self):
         a = Variable(np.array(2.0))
@@ -189,7 +189,7 @@ class OperatorTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(4.0))
-        self.assertEqual(a.grad, -1.0)
+        self.assertEqual(a.grad.data, np.array(-1.0))
 
     def test_div(self):
         x = Variable(np.array(4.0))
@@ -197,7 +197,7 @@ class OperatorTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(2.0))
-        self.assertEqual(x.grad, 0.5)
+        self.assertEqual(x.grad.data, np.array(0.5))
 
     def test_pow(self):
         x = Variable(np.array(2.0))
@@ -205,7 +205,7 @@ class OperatorTest(unittest.TestCase):
         y.backward()
 
         self.assertEqual(y.data, np.array(16.0))
-        self.assertEqual(x.grad, 32.0)
+        self.assertEqual(x.grad.data, np.array(32.0))
 
 
 
@@ -219,8 +219,8 @@ class ComplexFuctionTest(unittest.TestCase):
         z = sphere(x, y)
         z.backward()
 
-        self.assertEqual(x.grad, np.array(2.0))
-        self.assertEqual(y.grad, np.array(2.0))
+        self.assertEqual(x.grad.data, np.array(2.0))
+        self.assertEqual(y.grad.data, np.array(2.0))
 
     def test_matyas(self):
         def sphere(x, y):
@@ -231,8 +231,8 @@ class ComplexFuctionTest(unittest.TestCase):
         z = sphere(x, y)
         z.backward()
 
-        self.assertEqual(x.grad, np.array(0.040000000000000036))
-        self.assertEqual(y.grad, np.array(0.040000000000000036))
+        self.assertEqual(x.grad.data, np.array(0.040000000000000036))
+        self.assertEqual(y.grad.data, np.array(0.040000000000000036))
 
     def test_goldstein(self):
         def goldstein(x, y):
@@ -244,6 +244,6 @@ class ComplexFuctionTest(unittest.TestCase):
         z = goldstein(x, y)
         z.backward()
 
-        self.assertEqual(x.grad, np.array(-5376.0))
-        self.assertEqual(y.grad, np.array(8064.0))
+        self.assertEqual(x.grad.data, np.array(-5376.0))
+        self.assertEqual(y.grad.data, np.array(8064.0))
 
