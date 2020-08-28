@@ -3,6 +3,7 @@ import unittest
 from variable import *
 
 from dezero.core_simple import *
+import dezero.functions as F
 
 class AddTest(unittest.TestCase):
     def test_forward(self):
@@ -246,4 +247,11 @@ class ComplexFuctionTest(unittest.TestCase):
 
         self.assertEqual(x.grad, np.array(-5376.0))
         self.assertEqual(y.grad, np.array(8064.0))
+
+class ReshapeTest(unittest.TestCase):
+    def test_reshape(self):
+        x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
+        y = F.reshape(x, (6,))
+        y.backward(retain_grad=True)
+        # todo assertion 
 
