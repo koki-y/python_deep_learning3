@@ -4,7 +4,7 @@ from dezero.core_simple import Function
 class Sin(Function):
     def forward(self, x):
         y = np.sin(x)
-        return
+        return y
 
     def backward(self, gy):
         x, = self.inputs
@@ -14,7 +14,7 @@ class Sin(Function):
 class Cos(Function):
     def forward(self, x):
         y = np.cos(x)
-        return
+        return y
 
     def backward(self, gy):
         x, = self.inputs
@@ -43,6 +43,56 @@ class Reshape(Function):
     def backward(self, gy):
         return reshape(gy, self.x_shape)
 
+class Transpose(Function):
+    def forward(self, x):
+        y = np.transpose(x)
+        return y
+
+    def backward(self, gy):
+        gx = transpose(gy)
+        return gx
+
+class Sum(Function):
+    def __init__(self, axis, keepdims):
+        self.axis = axis
+        self.keepdims = keepdims
+
+    def forward(self, x):
+        self.x_shape = x.shape
+        y = x.sum(axis=self.axis, keepdims=self.kiipdims)
+        return y
+
+    def backward(self, gy):
+        gy = utils.reshape_sum_backward(gy, self.x_shape, self.axis, self.keepdims)
+        gx = broadcast_to(gy, self.x_shape)
+        return gx
+
+class BroadcastTo(Function):
+    def __init__(self, shape):
+        self.shape = shape
+
+    def forward(self, x):
+        self.x_shape = shape
+        y = np.broadcast_to(x, self.shape)
+        return y
+
+    def backward(self, gy):
+        gx = sum_to(gy, self.x_shape)
+        return gx
+
+class SumTo(Function):
+    def __init__(self, shape):
+        self.shape = shape
+
+    def forward(self, x):
+        self.x_shape = x.shape
+        y = utils.sum_to(x, self.shape)
+        return y
+
+    def backward(self, gy):
+        gx = broadcast_to(gy, self.x_shape)
+        return gx
+
 def sin(x):
     return Sin()(x)
 
@@ -56,4 +106,22 @@ def reshape(x, shape):
     if x.shape == shape:
         return as_variable(x)
     return Reshape(shape)(x)
+
+def transpose(x):
+    return Transpose()(x)
+
+def sum(x, axis=None, keepdims=False):
+    return Sum(axis, keepkims)(x)
+
+def broadcast_to(x, shape):
+    if x.shape == shape:
+        return as_variable(x)
+    return BroadcastTo(shape)(x)
+
+def sum_to(x, shape):
+    if x.shape == shape:
+        return as_variable(x)
+    return SumTo(shape)(x)
+
+
 
