@@ -251,7 +251,27 @@ class ComplexFuctionTest(unittest.TestCase):
 class ReshapeTest(unittest.TestCase):
     def test_reshape(self):
         x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
-        y = F.reshape(x, (6,))
+        y = x.reshape((6,))
         y.backward(retain_grad=True)
-        # todo assertion 
+        self.assertEqual(y.data.shape, (6,))
+        self.assertEqual(x.grad.shape, (2, 3))
+
+class SumTet(unittest.TestCase):
+    def test_sum(self):
+        x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
+        y = x.sum(axis=0)
+        y.backward()
+        self.assertEqual(y.data[0], 5)
+        self.assertEqual(y.data[1], 7)
+        self.assertEqual(y.data[2], 9)
+
+class MatMulTet(unittest.TestCase):
+    def test_matmul(self):
+        x = Variable(np.random.randn(2, 3))
+        W = Variable(np.random.randn(3, 4))
+        y = F.matmul(x, W)
+        y.backward()
+
+        self.assertEqual(x.grad.shape, (2, 3))
+        self.assertEqual(W.grad.shape, (3, 4))
 

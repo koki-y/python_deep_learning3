@@ -1,5 +1,6 @@
 import numpy as np
-from dezero.core_simple import Function
+import dezero.utils as utils
+from dezero.core import Function
 
 class Sin(Function):
     def forward(self, x):
@@ -59,7 +60,7 @@ class Sum(Function):
 
     def forward(self, x):
         self.x_shape = x.shape
-        y = x.sum(axis=self.axis, keepdims=self.kiipdims)
+        y = x.sum(axis=self.axis, keepdims=self.keepdims)
         return y
 
     def backward(self, gy):
@@ -72,7 +73,7 @@ class BroadcastTo(Function):
         self.shape = shape
 
     def forward(self, x):
-        self.x_shape = shape
+        self.x_shape = self.shape
         y = np.broadcast_to(x, self.shape)
         return y
 
@@ -93,6 +94,17 @@ class SumTo(Function):
         gx = broadcast_to(gy, self.x_shape)
         return gx
 
+class MatMul(Function):
+    def forward(self,x, W):
+        y = x.dot(W)
+        return y
+
+    def backward(self, gy):
+        x, W = self.inputs
+        gx = matmul(gy, W.T)
+        gW = matmul(x.T, gy)
+        return gx, gW
+
 def sin(x):
     return Sin()(x)
 
@@ -111,7 +123,7 @@ def transpose(x):
     return Transpose()(x)
 
 def sum(x, axis=None, keepdims=False):
-    return Sum(axis, keepkims)(x)
+    return Sum(axis, keepdims)(x)
 
 def broadcast_to(x, shape):
     if x.shape == shape:
@@ -123,5 +135,6 @@ def sum_to(x, shape):
         return as_variable(x)
     return SumTo(shape)(x)
 
-
+def matmul(x, W):
+    return MatMul()(x, W)
 
