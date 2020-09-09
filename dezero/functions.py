@@ -1,6 +1,6 @@
 import numpy as np
 import dezero.utils as utils
-from dezero.core import Function
+from dezero.core import Function, as_variable
 
 class Sin(Function):
     def forward(self, x):
