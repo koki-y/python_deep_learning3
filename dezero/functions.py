@@ -32,6 +32,16 @@ class Tanh(Function):
         gx = gy * (1 - y * y)
         return gx
 
+class Exp(Function):
+    def forward(self, x):
+        y = np.exp(x)
+        return y
+
+    def backward(self, gy):
+        y = self.outputs[0]()  # weakref
+        gx = gy * y
+        return gx
+
 class Reshape(Function):
     def __init__(self, shape):
         self.shape = shape
@@ -114,6 +124,9 @@ def cos(x):
 def tanh(x):
     return Tanh()(x)
 
+def exp(x):
+    return Exp()(x)
+
 def reshape(x, shape):
     if x.shape == shape:
         return as_variable(x)
@@ -137,4 +150,19 @@ def sum_to(x, shape):
 
 def matmul(x, W):
     return MatMul()(x, W)
+
+# Functions for neural net
+def linear(x, W, b=None):
+    x, W = as_variable(x), as_variable(W)
+    t = matmul(x, W)
+    if b is None:
+        return t
+    y = t + b
+    t.data = None
+    return y
+
+def sigmoid(x):
+    x = as_variable(x)
+    y = 1 / (1 + exp(-x))
+    return y
 
