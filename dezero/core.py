@@ -104,6 +104,9 @@ class Variable:
     def sum(self, axis=None, keepdims=False):
         return dezero.functions.sum(self, axis, keepdims)
 
+class Parameter(Variable):
+  pass
+
 class Function:
     def __call__(self, *inputs):
         inputs = [as_variable(x) for x in inputs]
