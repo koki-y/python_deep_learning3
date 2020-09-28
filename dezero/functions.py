@@ -42,6 +42,14 @@ class Exp(Function):
         gx = gy * y
         return gx
 
+class Log(Function):
+    def forward(self, x):
+        return np.log(x)
+
+    def backward(self, gy):
+        x, = self.inputs
+        return gy / x
+
 class Reshape(Function):
     def __init__(self, shape):
         self.shape = shape
@@ -91,6 +99,32 @@ class BroadcastTo(Function):
         gx = sum_to(gy, self.x_shape)
         return gx
 
+class GetItem(Function):
+    def __init__(self, slices):
+        self.slices = slices
+
+    def forward(self, x):
+        y = x[self.slices]
+        return y
+
+    def backward(self, gy):
+        x, = self.inputs
+        f = GetItemGrad(self.slices, x.shape)
+        return f(gy)
+
+class GetItemGrad(Function):
+    def __init__(self, slices, in_shape):
+        self.slices = slices
+        self.in_shape = in_shape
+
+    def forward(self, gy):
+        gx = np.zeros(self.in_shape)
+        np.add.at(gx, self.slices, gy)
+        return gx
+
+    def backward(self, ggx):
+        return get_item(ggx, self.slices)
+
 class SumTo(Function):
     def __init__(self, shape):
         self.shape = shape
@@ -127,6 +161,9 @@ def tanh(x):
 def exp(x):
     return Exp()(x)
 
+def log(x):
+    return Log()(x)
+
 def reshape(x, shape):
     if x.shape == shape:
         return as_variable(x)
@@ -142,6 +179,9 @@ def broadcast_to(x, shape):
     if x.shape == shape:
         return as_variable(x)
     return BroadcastTo(shape)(x)
+
+def get_item(x, slices):
+    return GetItem(slices)(x)
 
 def sum_to(x, shape):
     if x.shape == shape:
@@ -164,5 +204,25 @@ def linear(x, W, b=None):
 def sigmoid(x):
     x = as_variable(x)
     y = 1 / (1 + exp(-x))
+    return y
+
+def clip(x, x_min, x_max):
+    np.clip(x.data, x_min, x_max)
+
+def softmax(x, axis=1):
+    x = as_variable(x)
+    y = exp(x)
+    sum_y = sum(y, axis=axis, keepdims=True)
+    return y / sum_y
+
+def softmax_cross_entropy(x, t):
+    x, t = as_variable(x), as_variable(t)
+    N = x.shape[0]
+
+    p = softmax(x)
+    clip(p, 1e-15, 1.0)
+    log_p = log(p)
+    tlog_p = log_p[np.arange(N), t.data]
+    y = -1 * sum(tlog_p) / N
     return y
 

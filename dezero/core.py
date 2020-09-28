@@ -104,9 +104,6 @@ class Variable:
     def sum(self, axis=None, keepdims=False):
         return dezero.functions.sum(self, axis, keepdims)
 
-class Parameter(Variable):
-  pass
-
 class Function:
     def __call__(self, *inputs):
         inputs = [as_variable(x) for x in inputs]
@@ -270,6 +267,9 @@ def my_sin(x, threshold=0.0001):
 
     return y
 
+class Parameter(Variable):
+    pass
+
 def setup_variable():
     Variable.__mul__ = mul
     Variable.__rmul__ = mul
@@ -281,3 +281,5 @@ def setup_variable():
     Variable.__truediv__ = div
     Variable.__rtruediv__ = rdiv
     Variable.__pow__ = pow
+    Variable.__getitem__ = dezero.functions.get_item
+
