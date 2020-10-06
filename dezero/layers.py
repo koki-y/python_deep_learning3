@@ -15,7 +15,7 @@ class Layer:
     def __call__(self, *inputs):
         outputs = self.forward(*inputs)
         if not isinstance(outputs, tuple):
-            utputs = (outputs,)
+            outputs = (outputs,)
         self.inputs = [weakref.ref(x) for x in inputs]
         self.outputs = [weakref.ref(y) for y in inputs]
         return outputs if len(outputs) > 1 else outputs[0]
@@ -56,7 +56,7 @@ class Linear(Layer):
 
     def _init_W(self):
         I, O = self.in_size, self.out_size
-        W_data = np.random.randn(I, O).astype(self.dtype) + np.sqrt(1 / I)
+        W_data = np.random.randn(I, O).astype(self.dtype) * np.sqrt(1 / I)
         self.W.data = W_data
 
     def forward(self, x):
