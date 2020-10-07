@@ -177,8 +177,8 @@ class Div(Function):
 
     def backward(self, gy):
         x0, x1 = self.inputs
-        gx0 = gy * (1 / x1)
-        gx1 = gy * (-x0 / (x1) ** 2)
+        gx0 = gy / x1
+        gx1 = gy * (-x0 / x1 ** 2)
         if self.x0_shape != self.x1_shape:
             gx0 = dezero.functions.sum_to(gx0, self.x0_shape)
             gx1 = dezero.functions.sum_to(gx1, self.x1_shape)
@@ -192,7 +192,7 @@ class Pow(Function):
         return x ** self.c
 
     def backward(self, gy):
-        x = self.inputs[0]
+        x, = self.inputs
         c = self.c
         return gy * (c * x ** (c-1))
 

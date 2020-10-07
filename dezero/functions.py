@@ -149,6 +149,94 @@ class MatMul(Function):
         gW = matmul(x.T, gy)
         return gx, gW
 
+class Softmax(Function):
+    def __init__(self, axis=1):
+        self.axis = axis
+
+    def forward(self, x):
+        y = x - x.max(axis=self.axis, keepdims=True)
+        y = np.exp(y)
+        y /= y.sum(axis=self.axis, keepdims=True)
+        return y
+
+    def backward(self, gy):
+        y = self.outputs[0]()
+        gx = y * gy
+        sumdx = gx.sum(axis=self.axis, keepdims=True)
+        gx -= y * sumdx
+        return gx
+
+class Clip(Function):
+    def __init__(self, x_min, x_max):
+        self.x_min = x_min
+        self.x_max = x_max
+
+    def forward(self, x):
+        y = np.clip(x, self.x_min, self.x_max)
+        return y
+
+    def backward(self, gy):
+        x, = self.inputs
+        mask = (x.data >= self.x_min) * (x.data <= self.x_max)
+        gx = gy * mask
+        return gx
+
+class SoftmaxCrossEntropy(Function):
+    def forward(self, x, t):
+        N = x.shape[0]
+        log_z = utils.logsumexp(x, axis=1)
+        log_p = x - log_z
+        log_p = log_p[np.arange(N), t.ravel()]
+        y = -log_p.sum() / np.float32(N)
+        return y
+
+    def backward(self, gy):
+        x, t = self.inputs
+        N, CLS_NUM = x.shape
+
+        gy *= 1/N
+        y = softmax(x)
+        # convert to one-hot
+        t_onehot = np.eye(CLS_NUM, dtype=t.dtype)[t.data]
+        y = (y - t_onehot) * gy
+        return y
+
+class Sigmoid(Function):
+    def forward(self, x):
+        y = np.tanh(x * 0.5) * 0.5 + 0.5
+        return y
+
+    def backward(self, gy):
+        y = self.outputs[0]()
+        gx = gy * y * (1 - y)
+        return gx
+
+class ReLU(Function):
+    def forward(self, x):
+        y = np.maximum(x, 0.0)
+        return y
+
+    def backward(self, gy):
+        x, = self.inputs
+        mask = x.data > 0
+        gx = gy * mask
+        return gx
+
+class Linear(Function):
+    def forward(self, x, W, b):
+        t = x.dot(W)
+        if b is None:
+            return t
+        else:
+            return t + b
+
+    def backward(self, gy):
+        x, W, b = self.inputs
+        gb = None if b.data is None else sum_to(gy, b.shape)
+        gx = matmul(gy, W.T)
+        gW = matmul(x.T, gy)
+        return gx, gW, gb
+
 def sin(x):
     return Sin()(x)
 
@@ -191,36 +279,31 @@ def sum_to(x, shape):
 def matmul(x, W):
     return MatMul()(x, W)
 
-# Functions for neural net
-def linear(x, W, b=None):
-    x, W = as_variable(x), as_variable(W)
-    t = matmul(x, W)
-    if b is None:
-        return t
-    y = t + b
-    t.data = None
-    return y
-
-def sigmoid(x):
-    x = as_variable(x)
-    y = 1 / (1 + exp(-x))
-    return y
+def softmax(x, axis=1):
+    return Softmax(axis)(x)
 
 def clip(x, x_min, x_max):
-    np.clip(x.data, x_min, x_max)
-
-def softmax(x, axis=1):
-    x = as_variable(x)
-    y = exp(x)
-    sum_y = sum(y, axis=axis, keepdims=True)
-    return y / sum_y
+    return Clip(x_min, x_max)(x)
 
 def softmax_cross_entropy(x, t):
+    return SoftmaxCrossEntropy()(x, t)
+
+# Functions for neural net
+def linear(x, W, b=None):
+    return Linear()(x, W, b)
+
+def sigmoid(x):
+    return Sigmoid()(x)
+
+def relu(x):
+    return ReLU()(x)
+
+def _softmax_cross_entropy(x, t):
     x, t = as_variable(x), as_variable(t)
     N = x.shape[0]
 
     p = softmax(x)
-    clip(p, 1e-15, 1.0)
+    p = clip(p, 1e-15, 1.0)
     log_p = log(p)
     tlog_p = log_p[np.arange(N), t.data]
     y = -1 * sum(tlog_p) / N
