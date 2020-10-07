@@ -5,6 +5,7 @@ try:
 except:
     pil_available = False
 import numpy as np
+from dezero import cuda
 
 class DataLoader:
     def __init__(self, dataset, batch_size, shuffle=True, gpu=False):
@@ -37,8 +38,10 @@ class DataLoader:
         batch_index = self.index[i * batch_size:(i + 1) * batch_size]
         batch = [self.dataset[i] for i in batch_index]
 
-        x = np.array([example[0] for example in batch])
-        t = np.array([example[1] for example in batch])
+        xp = cuda.cupy if self.gpu else np
+
+        x = xp.array([example[0] for example in batch])
+        t = xp.array([example[1] for example in batch])
 
         self.iteration += 1
         return x, t

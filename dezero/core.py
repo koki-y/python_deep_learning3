@@ -8,6 +8,12 @@ import dezero
 class Config:
     enable_backprop = True
 
+try:
+    import cupy as cp
+    array_types = (np.ndarray, cupy.ndarray)
+except ImportError:
+    array_types = (np.ndarray)
+
 class Variable:
     __array_priority__ = 200
 
@@ -54,7 +60,8 @@ class Variable:
     def backward(self, retain_grad=False, create_graph=False):
         if self.grad is None:
            # set first gradient.
-           self.grad = Variable(np.ones_like(self.data))
+           xp = dezero.cuda.get_array_module(self.data)
+           self.grad = Variable(xp.ones_like(self.data))
 
         funcs = []
         seen_set = set()
@@ -103,6 +110,14 @@ class Variable:
 
     def sum(self, axis=None, keepdims=False):
         return dezero.functions.sum(self, axis, keepdims)
+
+    def to_cpu(self):
+        if self.data is not None:
+            self.data = dezero.cuda.as_numpy(self.data)
+
+    def to_gpu(self):
+        if self.data is not None:
+            self.data = dezero.cuda.as_cupy(self.data)
 
 class Function:
     def __call__(self, *inputs):
@@ -208,9 +223,9 @@ def using_config(name, value):
 def no_grad():
     return using_config("enable_backprop", False)
 
-def as_array(x):
+def as_array(x, array_module=np):
     if np.isscalar(x):
-        return np.array(x)
+        return array_module.array(x)
     return x
 
 def as_variable(obj):
@@ -223,34 +238,34 @@ def as_variable(obj):
     return variable
 
 def is_not_ndarray(data):
-    return not isinstance(data, np.ndarray)
+    return not isinstance(data, array_types)
 
 
 def add(x0, x1):
-    x1 = as_array(x1)
+    x1 = as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Add()(x0, x1)
 
 def mul(x0, x1):
-    x1 = as_array(x1)
+    x1 = as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Mul()(x0, x1)
 
 def neg(x):
     return Neg()(x)
 
 def sub(x0, x1):
-    x1 = as_array(x1)
+    x1 = as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Sub()(x0, x1)
 
 def rsub(x0, x1):
-    x1 = as_array(x1)
+    x1 = as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Sub()(x1, x0)
 
 def div(x0, x1):
-    x1 = as_array(x1)
+    x1 = as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Div()(x0, x1)
 
 def rdiv(x0, x1):
-    x1 = as_array(x1)
+    x1 = as_array(x1, dezero.cuda.get_array_module(x0.data))
     return Div()(x1, x0)
 
 def pow(x, c):
