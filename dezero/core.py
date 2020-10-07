@@ -10,7 +10,7 @@ class Config:
 
 try:
     import cupy as cp
-    array_types = (np.ndarray, cupy.ndarray)
+    array_types = (np.ndarray, cp.ndarray)
 except ImportError:
     array_types = (np.ndarray)
 
